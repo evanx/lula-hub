@@ -1,5 +1,5 @@
 {
-  "name": "fastify-xadd-mlk",
+  "name": "frx-sync-mlk",
   "version": "0.1.0",
   "description": "HTTP microservice to POST to Redis stream",
   "main": "index.js",
@@ -10,10 +10,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:evanx/fastify-xadd-mlk.git"
+    "url": "git@github.com:evanx/frx-sync-mlk.git"
   },
   "keywords": [
-    "Redis"
+    "Fastify",
+    "Redis",
+    "Redis streams"
   ],
   "author": "Evan Summers",
   "license": "Apache-2.0",
@@ -27,6 +29,7 @@
     "fastify-bearer-auth": "^4.2.0",
     "fastify-formbody": "^3.1.0",
     "fastify-redis": "^3.1.1",
+    "ioredis": "^4.14.0",
     "lodash": "^4.17.15",
     "node-fetch": "^2.6.0",
     "pino-pretty": "^3.2.0"

@@ -4,6 +4,16 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "mdel",
+      "program": "${workspaceFolder}/bin/mdel.js",
+      "env": {
+        "NODE_ENV": "development",
+        "MDEL_MATCH": "fr:*"
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "server",
       "program": "${workspaceFolder}/lib/server",
       "outputCapture": "std",

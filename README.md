@@ -1,20 +1,35 @@
 # frx-sync-mlk
 
-Microservice for Redis message streams via bearer session token.
+Microservice to sync Redis message streams via bearer session token.
 
-`frx` prefix: the stack includes Fastify and Redis streams
+Naming convention:
 
-`mlk` postfix: named in honour of MLK
+- `frx` stack prefix: includes Fastify and Redis streams
+- `mlk` distinctive postfix: in honour of MLK
 
-## Design 
+## Design
 
+The proposed solution enables async communications with a central hub via HTTPS by leveraging Redis streams.
 
+Remote clients have a unique client ID.
+
+### Client publish to hub
+
+A client publishes messages by inserting these into a local Redis stream
+
+```javascript
+redis-cli XADD publish:x MAXLEN 1000 * topic test payload '{ "type": "hello" }'
+```
+
+A process on the client syncs this stream up to the hub as follows.
+
+TBC
 
 ### Authentication
 
-We wish to use https://github.com/evanx/fr-bearer-auth-mlk
-
-See https://github.com/evanx/fastify-auth-mlk
+We authenticate bearer tokens managed by https://github.com/evanx/fastify-auth-mlk,
+which provides `/register` and `/login` endpoints. If the bearer token is valid, then the Redis
+hashes key `session:${token}:h` will exist.
 
 ```javascript
 fastify.register(require('fastify-bearer-auth'), {

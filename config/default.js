@@ -1,10 +1,13 @@
 module.exports = {
+  inStreamKeyPrefix: 'in',
+  outStreamKeyPrefix: 'out',
+  xreadCount: 9,
   port: 3000,
   logger: {
     level: 'info',
   },
   redis: {
-    host: '127.0.0.1',
     keyPrefix: 'fr:',
+    url: 'redis://127.0.0.1:6379',
   },
 }

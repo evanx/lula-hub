@@ -1,11 +1,11 @@
-# frx-sync-mlk
+# lula-server
 
 Microservice to sync Redis message streams via bearer session token.
 
-Naming convention:
+Stack includes:
 
-- `frx` stack prefix: includes Fastify and Redis streams
-- `mlk` distinctive postfix: in honour of MLK
+- Redis
+- Fastify
 
 ## Design
 
@@ -15,7 +15,7 @@ Remote clients have a unique client ID.
 
 ### Client publish to hub
 
-A client publishes messages by inserting these into a local Redis stream
+A client publishes messages by adding these into a local Redis stream
 
 ```javascript
 redis-cli XADD publish:x MAXLEN 1000 * topic test payload '{ "type": "hello" }'

@@ -4,7 +4,7 @@
   "description": "HTTP microservice to POST to Redis stream",
   "main": "index.js",
   "scripts": {
-    "test": "jest",
+    "test": "NODE_ENV=test jest",
     "start": "node lib/server",
     "start:dev": "NODE_ENV=development node lib/server"
   },
@@ -20,8 +20,19 @@
   "author": "Evan Summers",
   "license": "Apache-2.0",
   "devDependencies": {
+    "eslint": "^6.6.0",
+    "eslint-config-prettier": "^6.5.0",
+    "eslint-config-prettier-standard": "^3.0.1",
+    "eslint-config-standard": "^14.1.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-node": "^10.0.0",
+    "eslint-plugin-prettier": "^3.1.1",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
     "jest": "^24.8.0",
-    "nodemon": "^1.19.1"
+    "nodemon": "^1.19.1",
+    "prettier": "1.19.1",
+    "prettier-config-standard": "^1.0.1"
   },
   "dependencies": {
     "config": "^3.2.2",

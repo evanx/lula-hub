@@ -15,7 +15,7 @@
       "type": "node",
       "request": "launch",
       "name": "server",
-      "program": "${workspaceFolder}/lib/server",
+      "program": "${workspaceFolder}/index.js",
       "outputCapture": "std",
       "env": {
         "NODE_ENV": "development"

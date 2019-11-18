@@ -1,7 +1,7 @@
 {
-  "name": "frx-sync-mlk",
+  "name": "lula-hub",
   "version": "0.1.0",
-  "description": "HTTP microservice to POST to Redis stream",
+  "description": "Fastify microservice to sync streams for Redis-based distributed messaging",
   "main": "index.js",
   "scripts": {
     "test": "NODE_ENV=test jest",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:evanx/frx-sync-mlk.git"
+    "url": "git@github.com:evanx/lula-hub.git"
   },
   "keywords": [
     "Fastify",

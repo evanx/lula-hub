@@ -1,4 +1,4 @@
-# lula-server
+# lula-hub
 
 Microservice to sync Redis message streams via bearer session token.
 
@@ -27,7 +27,7 @@ TBC
 
 ### Authentication
 
-We authenticate bearer tokens managed by https://github.com/evanx/fastify-auth-mlk,
+We authenticate bearer tokens managed by https://github.com/evanx/lula-auth,
 which provides `/register` and `/login` endpoints. If the bearer token is valid, then the Redis
 hashes key `session:${token}:h` will exist.
 
@@ -49,4 +49,6 @@ fastify.register(require('fastify-bearer-auth'), {
 
 ## Related
 
-https://github.com/evanx/fastify-xadd-mlk
+- https://github.com/evanx/lula-auth
+- https://github.com/evanx/lula-remote
+

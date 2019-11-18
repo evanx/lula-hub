@@ -1,6 +1,6 @@
 module.exports = {
   logger: {
-    level: 'debug',
+    level: 'warn',
     prettyPrint: { colorize: true, translateTime: true },
   },
 }

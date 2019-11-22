@@ -8,7 +8,7 @@
       "program": "${workspaceFolder}/bin/mdel.js",
       "env": {
         "NODE_ENV": "development",
-        "MDEL_MATCH": "fr:*"
+        "MDEL_MATCH": "lula:*"
       }
     },
     {

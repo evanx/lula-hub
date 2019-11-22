@@ -7,7 +7,7 @@ module.exports = {
     level: 'info',
   },
   redis: {
-    keyPrefix: 'fr:',
+    keyPrefix: 'lula:',
     url: 'redis://127.0.0.1:6379',
   },
 }

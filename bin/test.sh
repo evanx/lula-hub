@@ -10,26 +10,26 @@ echo_err() {
 }
 
 _clear() {
-  redis-cli del fr:in:x
-  redis-cli del fr:out:test-client:x
-  redis-cli del fr:seq:h
+  redis-cli del lula:in:x
+  redis-cli del lula:out:test-client:x
+  redis-cli del lula:seq:h
 }
 
 _clear
 
-redis-cli del fr:session:abc123:h
+redis-cli del lula:session:abc123:h
 
 echo keys:
-redis-cli keys 'fr:*'
+redis-cli keys 'lula:*'
 
-echo redis-cli hset fr:session:abc123:h client test-client
-redis-cli hset fr:session:abc123:h client test-client
+echo redis-cli hset lula:session:abc123:h client test-client
+redis-cli hset lula:session:abc123:h client test-client
 
-echo redis-cli xadd fr:out:test-client:x 1555000111000-0 type test-out payload '{}' 
-redis-cli xadd fr:out:test-client:x 1555000111000-0 type test-out payload '{}' 
+echo redis-cli xadd lula:out:test-client:x 1555000111000-0 type test-out payload '{}' 
+redis-cli xadd lula:out:test-client:x 1555000111000-0 type test-out payload '{}' 
 
-echo redis-cli xadd fr:out:test-client:x 1555000111001-0 type test-out payload '{}' 
-redis-cli xadd fr:out:test-client:x 1555000111001-0 type test-out payload '{}' 
+echo redis-cli xadd lula:out:test-client:x 1555000111001-0 type test-out payload '{}' 
+redis-cli xadd lula:out:test-client:x 1555000111001-0 type test-out payload '{}' 
 
 _xadd() {
   data="${1}"
@@ -77,12 +77,12 @@ _xread 0-0 |
 _xread 1555000111000-0 | 
   grep '\["1555000111001-0",\["type","test-out","payload","{}"'
 
-echo redis-cli xread streams fr:in:x 0-0 
-redis-cli xread streams fr:in:x 0-0 
-redis-cli xread streams fr:in:x 0-0 | grep type -A1 | tail -1 | grep -q '^test-in$'
+echo redis-cli xread streams lula:in:x 0-0 
+redis-cli xread streams lula:in:x 0-0 
+redis-cli xread streams lula:in:x 0-0 | grep type -A1 | tail -1 | grep -q '^test-in$'
 
-echo redis-cli xrange fr:in:x - + 
-redis-cli xrange fr:in:x - + 
+echo redis-cli xrange lula:in:x - + 
+redis-cli xrange lula:in:x - + 
 
 echo 'OK'
 

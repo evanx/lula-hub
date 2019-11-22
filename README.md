@@ -52,7 +52,7 @@ The Lula project achieves this by sync'ing such Redis streams reliably via authe
 - `lula-hub` and `lula-auth` deployed to the cloud
 - `lula-client` deployed to remote devices
 
-Although these repos are tiny and simple, they leverage Redis for reliable exactly-once delivery - voila!
+Although these repos are tiny and simple, they leverage Redis for reliable exactly-once delivery - voila! :)
 
 ### Consumer groups
 
@@ -70,11 +70,11 @@ See https://redis.io/commands/xreadgroup.
 
 We wish to enable the paradigm of "Redis-driven microservices" to improve testability.
 
-For example, your custom services that produce and consumer messages are readily testable e.g.:
+For example, your custom services that produce and consume messages are readily testable e.g.:
 
 - setup the state of your test Redis instance
 - run your function
-- assert that the resulting Redis state is as expected - voila!
+- assert that the resulting Redis state is as expected - voila! :)
 
 For example:
 
@@ -129,11 +129,13 @@ redis-cli hmset "lula:client:${clientId}:h" regToken "${regToken}" regBy "${regB
 
 The Lula-auth microservice provides `/register` and `/login` endpoints.
 
-The client will `/register` itself once-off, specifying a self-generated authentication `secret.`
+The Lula-client will `/register` itself once-off, specifying a self-generated authentication `secret.`
 
-Thereafter the client can `/login` in order to receive a `bearerToken` for HTTP requests to Lula-hub.
+Thereafter the client can `/login` using that `secret` in order to receive a `bearerToken` for HTTP requests to Lula-hub.
 
-It will create a session key using the `bearerToken` so that we can authenticate a client as follows:
+Lula-auth will create a `session` hashes key in Redis named `session:${bearerToken}:h` with a field `client.`
+
+Lula-hub uses the `bearerToken` from the HTTP `Authorization` header to authenticate the client as follows:
 
 ```javascript
 const client = await fastify.redis.hget(`session:${bearerToken}:h`, 'client')

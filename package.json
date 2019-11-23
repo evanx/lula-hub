@@ -4,9 +4,9 @@
   "description": "Fastify microservice to sync streams for Redis-based distributed messaging",
   "main": "index.js",
   "scripts": {
-    "test": "NODE_ENV=test jest",
-    "start": "node lib/server",
-    "start:dev": "NODE_ENV=development node lib/server"
+    "test": "NODE_CONFIG_ENV=testing jest",
+    "start": "node index.js",
+    "start:dev": "NODE_ENV=development node index.js"
   },
   "repository": {
     "type": "git",

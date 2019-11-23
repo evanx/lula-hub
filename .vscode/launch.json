@@ -4,21 +4,21 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "mdel",
-      "program": "${workspaceFolder}/bin/mdel.js",
+      "name": "start",
+      "program": "${workspaceFolder}/index.js",
+      "outputCapture": "std",
       "env": {
-        "NODE_ENV": "development",
-        "MDEL_MATCH": "lula:*"
+        "NODE_ENV": "development"
       }
     },
     {
       "type": "node",
       "request": "launch",
-      "name": "server",
-      "program": "${workspaceFolder}/index.js",
-      "outputCapture": "std",
+      "name": "mdel",
+      "program": "${workspaceFolder}/bin/mdel.js",
       "env": {
-        "NODE_ENV": "development"
+        "NODE_ENV": "development",
+        "MDEL_MATCH": "lula:*"
       }
     },
     {
@@ -30,7 +30,7 @@
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "env": {
-        "NODE_ENV": "test"
+        "NODE_CONFIG_ENV": "testing"
       }
     }
   ]

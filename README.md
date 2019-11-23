@@ -5,7 +5,6 @@
 Todo:
 
 - Blocking timeout for `/xread` for long polling
-- Refactor for Jest tests on endpoints similar to Lula-auth
 - Websockets to avoid polling
 
 Related services:
@@ -141,7 +140,7 @@ Lula-hub uses the `bearerToken` from the HTTP `Authorization` header to authenti
 const client = await fastify.redis.hget(`session:${bearerToken}:h`, 'client')
 ```
 
-This session key will expire, and thereafter require a new `/login.`
+This session key will expire, and thereafter Lula-client must `/login` again.
 
 ### lula-hub
 
@@ -177,7 +176,7 @@ This authenticates the following HTTP header:
 Authorization: Bearer ${bearerToken}
 ```
 
-If the Redis session key `session:${bearerToken}:h` has expired, we will return a `401` HTTP error code,
+If the Redis session key `session:${bearerToken}:h` has expired, we'll get a `401` HTTP error code,
 to advise the Lula-client to `/login` again.
 
 ### lula-client

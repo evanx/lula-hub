@@ -1,14 +1,11 @@
 const config = require('config')
-const {
-  buildLogger,
-  buildRedis,
-  endRedis,
-  multiAsync,
-} = require('../lib/utils')
+
+const { buildLogger, buildRedis, endRedis, multiAsync } = require('./lib/utils')
+
 const redisClient = buildRedis(config.redis)
 const logger = buildLogger({ name: 'lula.integration', level: 'debug' })
 
-describe('lula-server', () => {
+describe('lula-hub', () => {
   const state = {
     clientId: 'test-client',
     sessionToken: 'abc123',
@@ -16,7 +13,7 @@ describe('lula-server', () => {
       'Content-Type': 'application/json',
       Authorization: 'Bearer abc123',
     },
-    fastify: require('../lib/fastify').fastify,
+    fastify: require('./lib/fastify'),
   }
 
   beforeAll(async () => {

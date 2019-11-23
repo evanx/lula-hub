@@ -1,6 +1,0 @@
-{
-  "logger": {
-    "level": "fatal",
-    "prettyPrint": { "colorize": true, "translateTime": true }
-  }
-}

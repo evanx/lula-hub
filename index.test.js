@@ -199,4 +199,18 @@ describe('lula-hub', () => {
     expect(parseInt(item.seq)).toBeGreaterThanOrEqual(parseInt(state.seq))
     state.seq = item.seq
   })
+
+  it('should block waiting for data', async () => {
+    const now = Date.now()
+    const res = await state.fastify.inject({
+      method: 'GET',
+      url: `/xread/${state.seq}?blockMs=100`,
+      headers: state.authHeader,
+    })
+    const duration = Date.now() - now
+    expect(duration).toBeGreaterThanOrEqual(100)
+    expect(duration).toBeLessThan(200)
+    const body = JSON.parse(res.body)
+    expect(body.items).toStrictEqual([])
+  })
 })

@@ -4,7 +4,6 @@
 
 Todo:
 
-- Blocking timeout for `/xread` for long polling
 - Websockets to avoid polling
 
 Related services:
@@ -109,9 +108,9 @@ describe('register', () => {
     }
     ... // Run function under test
     await expect(redisClient.hlen(state.clientKey)).resolves.toStrictEqual(1)
-    await expect(redisClient.hkeys(state.clientKey)).resolves.toEqual(['secret'])
+    await expect(redisClient.hkeys(state.clientKey)).resolves.toStrictEqual(['secret'])
     const bcryptRes = await redisClient.hget(state.clientKey, 'secret')
-    await expect(bcrypt.compare(payload.secret, bcryptRes)).resolves.toEqual(true)
+    await expect(bcrypt.compare(payload.secret, bcryptRes)).resolves.toStrictEqual(true)
   })
 
   ... // More tests

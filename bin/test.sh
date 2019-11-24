@@ -17,6 +17,16 @@ _review() {
   redis-cli xread STREAMS lula:in:x 0-0
 }
 
+_finish() {
+  if [ $? -ne 0 ]
+  then
+    _review
+    echo "\n❌ exit $?"
+  fi
+}
+
+trap _finish EXIT
+
 _clear() {
   redis-cli del lula:in:x
   redis-cli del lula:out:test-client:x
@@ -32,11 +42,11 @@ _review
 echo "\n#️⃣ redis-cli hset lula:session:abc123:h client test-client'"
 redis-cli hset lula:session:abc123:h client test-client
 
-echo "\n#️⃣ redis-cli xadd lula:out:test-client:x 1555000111000-0 type test-out payload '{}'"
-redis-cli xadd lula:out:test-client:x 1555000111000-0 type test-out payload '{}' 
+echo "\n#️⃣ redis-cli xadd lula:out:test-client:x 1555000111000-0 type test-out-1 payload '{}'"
+redis-cli xadd lula:out:test-client:x 1555000111000-0 type test-out-1 payload '{}' 
 
-echo "\n#️⃣ redis-cli xadd lula:out:test-client:x 1555000111001-0 type test-out payload '{}'"
-redis-cli xadd lula:out:test-client:x 1555000111001-0 type test-out payload '{}' 
+echo "\n#️⃣ redis-cli xadd lula:out:test-client:x 1555000111001-0 type test-out-2 payload '{}'"
+redis-cli xadd lula:out:test-client:x 1555000111001-0 type test-out-2 payload '{}' 
 
 _review 
 
@@ -70,21 +80,56 @@ _xread() {
   http://127.0.0.1:3000/xread/${id}
 }
 
-_seq | 
+_xreadBlock() {
+  id="${1}"
+  blockMs="${2}"
+  echo2 "\n#️⃣ xread ${id}"
+  curl -s -w '\n' \
+  -H 'Authorization: Bearer abc123' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -H "Accept: application/json" \
+  http://127.0.0.1:3000/xread/${id}?blockMs=${blockMs}
+}
+
+_now() {
+  node -e "console.log(Date.now())"
+}
+
+_duration() {
+  node -e "console.log(Date.now() - $1)"
+}
+
+startTime=`_now`
+_xreadBlock $ 200
+duration=`_duration $startTime`
+echo "duration ${duration}"
+[ $duration -ge 200 -a $duration -lt 500 ]
+
+_seq |
   grep '^{"seq":"0-0"}'
+
 _xadd 'type=test1&seq=1555000111000-0' | 
+  tee /dev/stderr |
   grep '^{"id":'
-_xadd 'type=test-in&seq=1555000111000-0' | 
+
+_xadd 'type=test2&seq=1555000111000-0' | 
   grep '^{"code":409,'
+
 _xadd 'type=test2&seq=1555000111000-1' | 
   grep '^{"id":'
+
 _seq | 
   grep '^{"seq":"1555000111000-1"}'
-_xread 0-0 | tee /dev/stderr |
+
+_xread 0-0 | 
+  tee /dev/stderr |
   jq '.items[0].seq' | grep -q 1555000111000-0
-_xread 0-0 | tee /dev/stderr |
+_xread 0-0 | 
+  tee /dev/stderr |
   jq '.items[1].seq' | grep -q 1555000111001-0
-_xread 1555000111000-0 | tee /dev/stderr |
+
+_xread 1555000111000-0 | 
+  tee /dev/stderr |
   grep ''
 
 echo '\n#️⃣ redis-cli xread streams lula:in:x 0-0'

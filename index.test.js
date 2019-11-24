@@ -46,7 +46,7 @@ describe('lula-hub', () => {
       url: '/seq',
       headers: {},
     })
-    expect(JSON.parse(res.body)).toStrictEqual({
+    expect(JSON.parse(res.payload)).toStrictEqual({
       code: 401,
       message: 'missing authorization header',
     })
@@ -60,7 +60,7 @@ describe('lula-hub', () => {
         Authorization: 'Bearer abc111',
       },
     })
-    expect(JSON.parse(res.body)).toStrictEqual({
+    expect(JSON.parse(res.payload)).toStrictEqual({
       code: 401,
       message: 'invalid authorization header',
     })
@@ -72,8 +72,8 @@ describe('lula-hub', () => {
       url: '/seq',
       headers: state.authHeader,
     })
-    const body = JSON.parse(res.body)
-    expect(body.seq).toBe('0-0')
+    const payload = JSON.parse(res.payload)
+    expect(payload.seq).toBe('0-0')
   })
 
   it('should reject message with seq not string', async () => {
@@ -87,7 +87,7 @@ describe('lula-hub', () => {
       headers: state.authHeader,
       payload: JSON.stringify(message),
     })
-    expect(JSON.parse(res.body)).toStrictEqual({
+    expect(JSON.parse(res.payload)).toStrictEqual({
       code: 400,
       message: 'Bad request (seq type)',
     })
@@ -104,7 +104,7 @@ describe('lula-hub', () => {
       headers: state.authHeader,
       payload: JSON.stringify(message),
     })
-    expect(JSON.parse(res.body)).toStrictEqual({
+    expect(JSON.parse(res.payload)).toStrictEqual({
       code: 400,
       message: 'Bad request (seq format)',
     })
@@ -124,8 +124,8 @@ describe('lula-hub', () => {
       },
       payload: JSON.stringify(message),
     })
-    const body = JSON.parse(res.body)
-    expect(parseInt(body.id)).toBeGreaterThan(state.startTimeMs)
+    const payload = JSON.parse(res.payload)
+    expect(parseInt(payload.id)).toBeGreaterThan(state.startTimeMs)
   })
 
   it('should advise nonzero seq', async () => {
@@ -134,8 +134,8 @@ describe('lula-hub', () => {
       url: '/seq',
       headers: state.authHeader,
     })
-    const body = JSON.parse(res.body)
-    expect(parseInt(body.seq)).toBeGreaterThanOrEqual(state.startTimeMs)
+    const payload = JSON.parse(res.payload)
+    expect(parseInt(payload.seq)).toBeGreaterThanOrEqual(state.startTimeMs)
   })
 
   it('should get empty items when reading empty stream', async () => {
@@ -144,7 +144,7 @@ describe('lula-hub', () => {
       url: '/xread/0-0',
       headers: state.authHeader,
     })
-    expect(JSON.parse(res.body).items).toHaveLength(0)
+    expect(JSON.parse(res.payload).items).toHaveLength(0)
   })
 
   it('should read data added to stream', async () => {
@@ -161,9 +161,9 @@ describe('lula-hub', () => {
       url: '/xread/0-0',
       headers: state.authHeader,
     })
-    const body = JSON.parse(res.body)
-    expect(body.items).toHaveLength(1)
-    const item = body.items[0]
+    const payload = JSON.parse(res.payload)
+    expect(payload.items).toHaveLength(1)
+    const item = payload.items[0]
     expect(item).toMatchObject({ type: 'test-out', payload: '{}' })
     expect(parseInt(item.seq)).toBeGreaterThanOrEqual(state.startTimeMs)
     state.seq = item.seq
@@ -175,7 +175,7 @@ describe('lula-hub', () => {
       url: `/xread/${state.seq}`,
       headers: state.authHeader,
     })
-    expect(JSON.parse(res.body).items).toHaveLength(0)
+    expect(JSON.parse(res.payload).items).toHaveLength(0)
   })
 
   it('should read latest data added to stream', async () => {
@@ -192,9 +192,9 @@ describe('lula-hub', () => {
       url: `/xread/${state.seq}`,
       headers: state.authHeader,
     })
-    const body = JSON.parse(res.body)
-    expect(body.items).toHaveLength(1)
-    const item = body.items[0]
+    const payload = JSON.parse(res.payload)
+    expect(payload.items).toHaveLength(1)
+    const item = payload.items[0]
     expect(item).toMatchObject({ type: 'test-out-again', payload: '{}' })
     expect(parseInt(item.seq)).toBeGreaterThanOrEqual(parseInt(state.seq))
     state.seq = item.seq
@@ -210,7 +210,7 @@ describe('lula-hub', () => {
     const duration = Date.now() - now
     expect(duration).toBeGreaterThanOrEqual(100)
     expect(duration).toBeLessThan(200)
-    const body = JSON.parse(res.body)
-    expect(body.items).toStrictEqual([])
+    const payload = JSON.parse(res.payload)
+    expect(payload.items).toStrictEqual([])
   })
 })

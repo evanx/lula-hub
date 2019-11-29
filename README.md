@@ -2,14 +2,11 @@
 
 ## Status: WIP
 
-Todo:
+Todo, in order of priority:
 
-- Websockets to avoid polling
-
-Related services:
-
-- lula-auth is complete, with Jest tests on its two endpoints.
-- lula-client is unstarted, just a placeholder repo at present
+- lula-client: implement the design presented here
+- lula-hub: websockets to avoid polling
+- lula-auth: differentiate multiple worker instances of the same client
 
 ## Overview
 
@@ -19,7 +16,6 @@ Its stack includes:
 
 - Fastify
 - Redis
-- Node
 
 Lula-hub uses lula-auth for bearer token authentication - see https://github.com/evanx/lula-auth
 
@@ -30,7 +26,7 @@ Lula-hub is an HTTP server used by lula-client to sync events - see https://gith
 On a remote device, we wish to publish events by adding these to a local Redis stream, e.g.:
 
 ```shell
-redis-cli XADD lula-client:out:x MAXLEN 10000 * topic 'test' payload '{ "type": "hello" }'
+redis-cli XADD lula-client:out:x MAXLEN 10000 * topic 'test' payload '{ "type": "hello-hub" }'
 ```
 
 Then on our central cloud infrastructure we can consume these events by reading a sync'ed stream e.g.:
@@ -42,7 +38,7 @@ redis-cli XREAD STREAMS lula-hub:in:x "${seq}"
 Vice versa for messages sent from the hub to remote clients e.g.:
 
 ```shell
-redis-cli XADD lula-hub:out:${clientId}:x MAXLEN 1000 * topic 'test' payload '{ "type": "hello" }'
+redis-cli XADD lula-hub:out:${clientId}:x MAXLEN 1000 * topic 'test' payload '{ "type": "hello-client" }'
 ```
 
 The Lula project achieves this by sync'ing such Redis streams reliably via authenticated HTTPS:
@@ -50,14 +46,14 @@ The Lula project achieves this by sync'ing such Redis streams reliably via authe
 - `lula-hub` and `lula-auth` deployed to the cloud
 - `lula-client` deployed to remote devices
 
-Although these repos are tiny and simple, they leverage Redis for reliable exactly-once delivery - voila! :)
+Although these repos are tiny and simple, they leverage Redis for exactly-once delivery - voila! :)
 
 ### Consumer groups
 
 Alternatively to `XREAD` we can use `XREADGROUP` i.e. Redis "consumer groups" to consume streams e.g.:
 
 ```shell
-redis-cli XREADGROUP GROUP ${group} ${consumer} STREAMS lula-hub:in:x "${seq}"
+redis-cli XREADGROUP GROUP "${group}" "${consumer}" STREAMS lula-hub:in:x "${seq}"
 ```
 
 In this use-case, each message is delivered to only one of a group collaborating consumers.
@@ -70,7 +66,7 @@ Custom functions whose side effects are limited to Redis are readily testable e.
 
 - setup the state of your test Redis instance
 - run your function
-- assert that the resulting Redis state is as expected - voila! :)
+- assert that the resulting Redis state is as expected - boom! :)
 
 For example:
 
@@ -101,8 +97,8 @@ describe('register', () => {
   it('should accept valid registration', async () => {
     const payload = {
       client: state.clientId,
+      otpSecret: 'GRZWE3CLNBBTK2LMIRFEM6CCI5WEQR3P',
       secret: 'test-secret',
-      regToken: 'test-regToken',
     }
     ... // Run function under test
     const bcryptRes = await redisClient.hget(state.clientKey, 'secret')
@@ -116,17 +112,17 @@ describe('register', () => {
 
 ### lula-auth
 
-We pre-authorize a client to register itself to the hub using a specified `regToken` before `regDeadline` as follows:
+We pre-authorize a client to register itself to the hub using a provisioned `otpSecret` before a `regDeadline` as follows:
 
 ```shell
-redis-cli hmset "lula-auth:client:${clientId}:h" regToken "${regToken}" regDeadline "${regDeadline}"
+redis-cli hmset "lula-auth:client:${clientId}:h" otpSecret "${otpSecret}" regDeadline "${regDeadline}"
 ```
 
-where `regToken` is bcrypted, and `regDeadline` is an epoch in milliseconds.
+where `otpSecret` is a TOTP secret, and `regDeadline` is an epoch in milliseconds.
 
 The lula-auth microservice provides `/register` and `/login` endpoints.
 
-The lula-client will `/register` itself once-off, specifying a self-generated authentication `secret,` together with its provisioned `regToken.` If the `regDeadline` has expired, then it must be extended (in Redis) in order for the client's registration to succeed.
+The lula-client will `/register` itself once-off, specifying a self-generated authentication `secret,` together with its provisioned `otpSecret.` If the `regDeadline` has expired, then this must be extended in Redis in order for the client's registration to succeed.
 
 Thereafter the client can `/login` using that `secret` in order to receive a `bearerToken` for HTTP requests to lula-hub.
 
@@ -138,7 +134,7 @@ Lula-hub uses the `bearerToken` from the HTTP `Authorization` header to authenti
 const client = await fastify.redis.hget(`session:${bearerToken}:h`, 'client')
 ```
 
-This session key will expire, and thereafter lula-client must `/login` again.
+Note that this session key will expire, and thereafter lula-client must `/login` again.
 
 ### lula-hub
 
@@ -186,18 +182,18 @@ This is a daemon process that we run on a client to sync the outgoing stream to 
 On the client device, custom processes publish messages to the hub simply by adding these into a local Redis stream e.g.:
 
 ```javascript
-redis-cli XADD 'lula-client:out:x' MAXLEN 10000 * topic 'test' payload '{ "type": "hello" }'
+redis-cli XADD 'lula-client:out:x' MAXLEN 10000 * topic 'test' payload '{ "type": "hello-hub" }'
 ```
 
 Incoming messages from the hub are synced into the stream `lula-client:in:x.` Custom processes on the device can consume this stream.
 
 #### Client registration
 
-The client device is provisioned with a `regToken.`
+The client device is provisioned with a `otpSecret.`
 
 When the lula-client starts up for the first time, it must generate and store its secret for authentication.
 
-The client posts its provisioned `regToken` and chosen `secret` to lula-auth's `/register` endpoint:
+The client posts its chosen `secret` and a time-based OTP using its provisioned `otpSecret` to lula-auth's `/register` endpoint:
 
 - in the event of a 200 (ok), change the client state to registered
 - in the event of an error, then retry `/register` at long intervals

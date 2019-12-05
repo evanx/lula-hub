@@ -32,7 +32,8 @@
     "jest": "^24.8.0",
     "nodemon": "^1.19.1",
     "prettier": "1.19.1",
-    "prettier-config-standard": "^1.0.1"
+    "prettier-config-standard": "^1.0.1",
+    "socket.io-client": "^2.3.0"
   },
   "dependencies": {
     "config": "^3.2.2",

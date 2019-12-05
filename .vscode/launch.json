@@ -4,11 +4,23 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "ws client",
+      "program": "${workspaceFolder}/test/websocket/ws-client.js",
+      "outputCapture": "std",
+      "env": {
+        "NODE_ENV": "development"
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "start",
       "program": "${workspaceFolder}/index.js",
       "outputCapture": "std",
       "env": {
-        "NODE_ENV": "development"
+        "NODE_ENV": "development",
+        "LOG_LEVEL": "debug",
+        "LOG_PRETTY": "true"
       }
     },
     {

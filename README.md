@@ -4,20 +4,18 @@
 
 Todo, in order of priority:
 
+- lula-hub: migrate to WebSockets
 - lula-client: implement the design presented here
-- lula-hub: websockets to avoid polling
-- lula-auth: differentiate multiple worker instances of the same client
+- lula-auth: consider JWT signing the session token
 
 ## Overview
 
-Lula-hub is a Node.js HTTP microservice to sync Redis streams. It's intended use-case is for reliable distributed messaging.
+Lula-hub is a Node.js WebSocket microservice to sync Redis streams. It's intended use-case is for reliable distributed messaging.
 
-Its stack includes:
+It is intended to be scaleable e.g. via Kubernetes, where each instance connects to the same Redis backend
+e.g. a managed instance on your infrastructure provider.
 
-- Fastify
-- Redis
-
-Lula-hub uses lula-auth for bearer token authentication - see https://github.com/evanx/lula-auth
+Lula-hub uses lula-auth for session token authentication - see https://github.com/evanx/lula-auth
 
 Lula-hub is an HTTP server used by lula-client to sync events - see https://github.com/evanx/lula-client (WIP)
 
@@ -41,12 +39,12 @@ Vice versa for messages sent from the hub to remote clients e.g.:
 redis-cli XADD lula-hub:out:${clientId}:x MAXLEN 1000 * topic 'test' payload '{ "type": "hello-client" }'
 ```
 
-The Lula project achieves this by sync'ing such Redis streams reliably via authenticated HTTPS:
+The Lula project achieves this by sync'ing such Redis streams reliably via WebSockets:
 
 - `lula-hub` and `lula-auth` deployed to the cloud
 - `lula-client` deployed to remote devices
 
-Although these repos are tiny and simple, they leverage Redis for exactly-once delivery - voila! :)
+Although these repos are tiny and simple, they leverage Redis for exactly-once delivery, consumer groups etc.
 
 ### Consumer groups
 
@@ -124,53 +122,17 @@ The lula-auth microservice provides `/register` and `/login` endpoints.
 
 The lula-client will `/register` itself once-off, specifying a self-generated authentication `secret,` together with its provisioned `otpSecret.` If the `regDeadline` has expired, then this must be extended in Redis in order for the client's registration to succeed.
 
-Thereafter the client can `/login` using that `secret` in order to receive a `bearerToken` for HTTP requests to lula-hub.
+Thereafter the client can `/login` using that `secret` in order to receive a `accessToken` for HTTP requests to lula-hub.
 
-Lula-auth will create a `session` hashes key in Redis named `session:${bearerToken}:h` with a field `client.`
+Lula-auth will create a `session` hashes key in Redis named `session:${accessToken}:h` with a field `client.`
 
-Lula-hub uses the `bearerToken` from the HTTP `Authorization` header to authenticate the client as follows:
-
-```javascript
-const client = await fastify.redis.hget(`session:${bearerToken}:h`, 'client')
-```
-
-Note that this session key will expire, and thereafter lula-client must `/login` again.
-
-### lula-hub
-
-This is an HTTP microservice using https://fastify.io.
-
-It is intended to be scaleable e.g. via Kubernetes, where each instance connects to the same Redis backend
-e.g. a managed instance on your infrastructure provider.
-
-Lula-hub uses `fastify-bearer-auth` to authenticate the Bearer token as follows e.g.:
+Lula-hub uses the `accessToken` from the WebSocket URL query parameters to authenticate the client as follows:
 
 ```javascript
-fastify.register(require('fastify-bearer-auth'), {
-  auth: async (bearerToken, request) => {
-    const client = await fastify.redis.hget(
-      `session:${bearerToken}:h`,
-      'client',
-    )
-    if (client) {
-      request.client = client
-      return true
-    }
-    return false
-  },
-  errorResponse: err => {
-    return { code: 401, message: err.message }
-  },
-})
+const client = await redis.hget(`session:${accessToken}:h`, 'client')
 ```
 
-This authenticates the following HTTP header:
-
-```
-Authorization: Bearer ${bearerToken}
-```
-
-If the Redis session key `session:${bearerToken}:h` has expired, we'll get a `401` HTTP error code,
+If this Redis session key has expired, we'll get a `401` HTTP error code,
 to advise the lula-client to `/login` again.
 
 ### lula-client
@@ -203,11 +165,11 @@ The client posts its chosen `secret` and a time-based OTP using its provisioned 
 A registered client can then `/login` via lula-auth and sync to lula-hub:
 
 - login using the `/login` endpoint from lula-auth
-- use the session token from `/login` as a `Bearer` token for HTTP requests to the hub
-- query the hub's `/seq` endpoint for the latest ID received from our client
+- use the session token from `/login` as the `accessToken` in the WebSocket URL for lula-hub
+- query the hub's `seq` endpoint for the latest ID received from our client
 - read the next entry in the `out` stream using `XREAD` with that ID
 - set the entry's `seq` field to its stream ID
-- post the entry to the hub using the `/xadd` endpoint
+- post the entry to the hub using the `xadd` endpoint
 - in the event of a 200 (ok), loop to `XREAD` the next entry
 - in the event of a 401 (unauthorized), `/login` again using lula-auth, then retry
 - in the event of a 429 (too many requests), then retry after a delay
@@ -221,18 +183,16 @@ it was successfully processed.
 
 ### Client polling
 
-When not using websockets (TODO), we poll for messages for the client from the hub's `out:${client}` stream as follows:
+We poll for messages for the client from the hub's `out:${client}` stream as follows:
 
 - query the local Redis for the latest received ID for hub messages
 - if we have not yet received any messages from the hub, then use `0-0` for the ID
-- with that ID, read the next message from the hub using its `/xread` endpoint with a long `blockMs` timeout
-- if no new message is available, then retry `/xread`
+- with that ID, read the next message from the hub using its `xread` endpoint with a long `blockMs` timeout
+- if no new message is available, then retry `xread`
 - ensure the last entry's `seq` field to its remote stream ID
 - add that message to the `in` stream of the local Redis
 - atomically store this latest `seq` for future resumption
-- loop to `/xread` the next hub message
-
-Note that the `/xread` endpoint supports a blocking timeout to support "long polling" e.g. via query parameter `?blockMs=30000.`
+- loop to `xread` the next hub message
 
 ## Design
 

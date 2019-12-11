@@ -1,23 +1,24 @@
 # lula-hub
 
-## Status: WIP
-
-Todo, in order of priority:
-
-- lula-hub: migrate to WebSockets
-- lula-client: implement the design presented here
-- lula-auth: consider JWT signing the session token
+![integration-test](/docs/img/integration-test.jpg?raw=true 'test.sh')
 
 ## Overview
 
-Lula-hub is a Node.js WebSocket microservice to sync Redis streams. It's intended use-case is for reliable distributed messaging.
+Lula-hub is a simple message broker to leverage Redis. More specifically it is a Node.js WebSocket microservice to sync Redis streams. Its intended use-case is for reliable distributed messaging.
 
 It is intended to be scaleable e.g. via Kubernetes, where each instance connects to the same Redis backend
 e.g. a managed instance on your infrastructure provider.
 
 Lula-hub uses lula-auth for session token authentication - see https://github.com/evanx/lula-auth
 
-Lula-hub is an HTTP server used by lula-client to sync events - see https://github.com/evanx/lula-client (WIP)
+Lula-hub is used by lula-client to sync events - see https://github.com/evanx/lula-client (WIP)
+
+## Lula status: WIP
+
+Todo, in order of priority:
+
+- lula-client: implement the design presented here
+- lula-auth: consider JWT signing the session token
 
 ## Goals
 
@@ -33,7 +34,7 @@ Then on our central cloud infrastructure we can consume these events by reading 
 redis-cli XREAD STREAMS lula-hub:in:x "${seq}"
 ```
 
-Vice versa for messages sent from the hub to remote clients e.g.:
+Similarly for messages to be sent from the hub to remote clients:
 
 ```shell
 redis-cli XADD lula-hub:out:${clientId}:x MAXLEN 1000 * topic 'test' payload '{ "type": "hello-client" }'
@@ -41,8 +42,8 @@ redis-cli XADD lula-hub:out:${clientId}:x MAXLEN 1000 * topic 'test' payload '{ 
 
 The Lula project achieves this by sync'ing such Redis streams reliably via WebSockets:
 
-- `lula-hub` and `lula-auth` deployed to the cloud
-- `lula-client` deployed to remote devices
+- `lula-hub` and `lula-auth` are deployed to the cloud
+- `lula-client` is deployed to remote devices or services connecting to the hub
 
 Although these repos are tiny and simple, they leverage Redis for exactly-once delivery, consumer groups etc.
 

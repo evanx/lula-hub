@@ -36,9 +36,30 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Jest Test",
+      "name": "jest",
       "program": "${workspaceFolder}/node_modules/jest/bin/jest",
-      "args": ["--runInBand", "--config=${workspaceFolder}/jest.config.js"],
+      "args": [
+        "--runInBand",
+        "--bail",
+        "--config=${workspaceFolder}/jest.config.js"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "env": {
+        "NODE_CONFIG_ENV": "testing",
+        "LOG_PRETTY": "true"
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "jest watch",
+      "program": "${workspaceFolder}/node_modules/jest/bin/jest",
+      "args": [
+        "--watchAll",
+        "--runInBand",
+        "--config=${workspaceFolder}/jest.config.js"
+      ],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "env": {

@@ -234,10 +234,10 @@ To support the request/response pattern, the response message should reference t
 For example, a response message sync'ed to the hub has the following fields:
 
 - `id` field for the remote sequential stream ID
-- `^id` field matching the request's `id` field
+- `ri` field matching the request's `id` field
 
 When the response is added to the hub's `in` stream, it will be assigned an auto-generated ID reflecting the hub's Redis clock,
-and this differs from its remote `seq.`
+and this differs from its remote `id.`
 
 ## Related
 

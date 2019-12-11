@@ -123,9 +123,15 @@ The lula-auth microservice provides `/register` and `/login` endpoints.
 
 The lula-client will `/register` itself once-off, specifying a self-generated authentication `secret,` together with its provisioned `otpSecret.` If the `regDeadline` has expired, then this must be extended in Redis in order for the client's registration to succeed.
 
-Thereafter the client can `/login` using that `secret` in order to receive a `accessToken` for HTTP requests to lula-hub.
+Thereafter the client can `/login` using that `secret` in order to receive an `accessToken` for a WebSocket connection to lula-hub.
 
 Lula-auth will create a `session` hashes key in Redis named `session:${accessToken}:h` with a field `client.`
+
+Lula-client will open a WebSocket connection to lula-hub e.g.:
+
+```javascript
+const ws = new WebSocket(`wss://${config.hubHost}/accessToken=${accessToken}`)
+```
 
 Lula-hub uses the `accessToken` from the WebSocket URL query parameters to authenticate the client as follows:
 

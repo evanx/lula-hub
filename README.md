@@ -31,7 +31,7 @@ redis-cli XADD lula-client:out:x MAXLEN 10000 * topic 'test' payload '{ "type": 
 Then on our central cloud infrastructure we can consume these events by reading a sync'ed stream e.g.:
 
 ```shell
-redis-cli XREAD STREAMS lula-hub:in:x "${seq}"
+redis-cli XREAD STREAMS lula-hub:in:x "${id}"
 ```
 
 Similarly for messages to be sent from the hub to remote clients:
@@ -52,7 +52,7 @@ Although these repos are tiny and simple, they leverage Redis for exactly-once d
 Alternatively to `XREAD` we can use `XREADGROUP` i.e. Redis "consumer groups" to consume streams e.g.:
 
 ```shell
-redis-cli XREADGROUP GROUP "${group}" "${consumer}" STREAMS lula-hub:in:x "${seq}"
+redis-cli XREADGROUP GROUP "${group}" "${consumer}" STREAMS lula-hub:in:x "${id}"
 ```
 
 In this use-case, each message is delivered to only one of a group collaborating consumers.
@@ -173,9 +173,9 @@ A registered client can then `/login` via lula-auth and sync to lula-hub:
 
 - login using the `/login` endpoint from lula-auth
 - use the session token from `/login` as the `accessToken` in the WebSocket URL for lula-hub
-- query the hub's `seq` endpoint for the latest ID received from our client
+- query the hub's `id` endpoint for the latest stream ID received from our client
 - read the next entry in the `out` stream using `XREAD` with that ID
-- set the entry's `seq` field to its stream ID
+- set the entry's `id` field to its client stream ID
 - post the entry to the hub using the `xadd` endpoint
 - in the event of a 200 (ok), loop to `XREAD` the next entry
 - in the event of a 401 (unauthorized), `/login` again using lula-auth, then retry
@@ -183,7 +183,7 @@ A registered client can then `/login` via lula-auth and sync to lula-hub:
 - in the event of a 409 (conflict) for a retry, ignore and loop to `XREAD` the next entry
 - in the event of a another error, retry the HTTP request to lula-hub
 
-Note that a 409 indicates the posted `seq` is equal or less than the last `seq` on record,
+Note that a 409 indicates the posted `id` is equal or less than the last `id` on record,
 and so is treated as a duplicate. We expect this in the event of a retry of a
 posting where the response was not received, and so we did not know that
 it was successfully processed.
@@ -192,13 +192,13 @@ it was successfully processed.
 
 We poll for messages for the client from the hub's `out:${client}` stream as follows:
 
-- query the local Redis for the latest `seq` for hub messages
-- if we have not yet received any messages from the hub, then use `0-0` for the `seq`
-- with that `seq` read the next message from the hub using its `xread` endpoint
+- query the local Redis for the latest `id` for hub messages
+- if we have not yet received any messages from the hub, then use `0-0` for the `id`
+- with that `id` read the next message from the hub using its `xread` endpoint
 - if no new message is available, then retry `xread` with a long `blockMs` timeout
-- set the entry's `seq` field to its remote stream ID
+- set the entry's `id` field to its remote stream ID
 - add that message to the `in` stream of the local Redis
-- atomically store this latest hub `seq` for future resumption
+- atomically store this latest hub `id` for future resumption
 - loop to `xread` the next hub message
 
 ## Design
@@ -214,13 +214,14 @@ When an entry is added to a Redis stream, it is assigned an auto-generated seque
 This is essentially the timestamp that the message is added according to Redis' clock.
 (See https://redis.io/topics/streams-intro.)
 
-When a client message is posted to the hub, its local stream ID is specified as a field named `seq.`
+When a client message is posted to the hub, its local stream ID is specified as a field named `id.`
 
 Clients add outgoing messages to an `out` stream in their local Redis i.e. using `xadd.`
 Their lula-client process syncs this remote `out` stream into the hub's `in` stream.
 
-Messages can be reposted by clients e.g. to retry in the event of a network error. The hub will ignore messages already received
-according to the message's sequential ID. This serves to ensure that messages are not duplicated
+Messages can be reposted by clients e.g. to retry in the event of a network error.
+The hub will ignore messages already received according to the message's sequential ID.
+This serves to ensure that messages are not duplicated
 and that "exactly-once" delivery can be guaranteed.
 
 ### Hub outgoing
@@ -232,8 +233,8 @@ Messages are sent to a client by adding them to a stream `out:${client}` on the 
 To support the request/response pattern, the response message should reference the ID of the request message.
 For example, a response message sync'ed to the hub has the following fields:
 
-- `seq` field for the remote sequential stream ID
-- `req` field matching the request's `seq` field
+- `id` field for the remote sequential stream ID
+- `^id` field matching the request's `id` field
 
 When the response is added to the hub's `in` stream, it will be assigned an auto-generated ID reflecting the hub's Redis clock,
 and this differs from its remote `seq.`

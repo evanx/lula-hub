@@ -5,9 +5,7 @@ const {
   buildId,
   buildMonitor,
   buildRedis,
-  delay,
   endRedis,
-  parseRedisMs,
   multiAsync,
 } = require('./lib/utils')
 
@@ -65,18 +63,18 @@ describe('lula-hub', () => {
   }
 
   const xadd = async data => {
-    state.seq = state.startTimeMs + '-0'
+    state.id = state.startTimeMs + '-0'
     const res = await exchange({
       type: 'xadd',
       payload: Object.assign(
         {
-          seq: state.seq,
+          id: state.id,
         },
         data,
       ),
     })
-    expect(parseInt(res.payload.seq)).toBeGreaterThan(state.startTimeMs)
-    monitor.debug('xadd', { seq: state.seq })
+    expect(parseInt(res.payload.id)).toBeGreaterThan(state.startTimeMs)
+    monitor.debug('xadd', { id: state.id })
     return res
   }
 
@@ -86,7 +84,7 @@ describe('lula-hub', () => {
       ['time'],
       ['del', 'in:x'],
       ['del', `out:${state.clientId}:x`],
-      ['del', 'seq:h'],
+      ['del', 'id:h'],
       ['del', sessionKey],
       ['hset', sessionKey, 'client', state.clientId],
       ['expire', sessionKey, 20],
@@ -140,42 +138,42 @@ describe('lula-hub', () => {
     ).rejects.toEqual({ event: 'close' })
   })
 
-  it('should advise 0-0 seq initially', async () => {
-    const res = await exchange({ type: 'seq' })
+  it('should advise 0-0 id initially', async () => {
+    const res = await exchange({ type: 'id' })
     expect(res).toMatchObject({
-      type: '^seq',
-      payload: { seq: '0-0' },
+      type: '^id',
+      payload: { id: '0-0' },
     })
   })
 
-  it('should reject message with seq not string', async () => {
+  it('should reject message with id not string', async () => {
     const res = await exchange({
       type: 'xadd',
       payload: {
-        seq: state.startTimeMs,
+        id: state.startTimeMs,
       },
     })
     expect(res).toMatchObject({
       type: '!xadd',
       payload: {
         status: 400,
-        message: 'Bad payload (seq type)',
+        message: 'Bad payload (id type)',
       },
     })
   })
 
-  it('should reject message with invalid seq format', async () => {
+  it('should reject message with invalid id format', async () => {
     const res = await exchange({
       type: 'xadd',
       payload: {
-        seq: toString(state.startTimeMs),
+        id: toString(state.startTimeMs),
       },
     })
     expect(res).toMatchObject({
       type: '!xadd',
       payload: {
         status: 400,
-        message: 'Bad payload (seq format)',
+        message: 'Bad payload (id format)',
       },
     })
   })
@@ -184,19 +182,19 @@ describe('lula-hub', () => {
     await xadd({ say: 'hello' })
   })
 
-  it('should advise nonzero seq', async () => {
-    const res = await exchange({ type: 'seq' })
-    expect(res.payload.seq).toBe(state.seq)
+  it('should advise nonzero id', async () => {
+    const res = await exchange({ type: 'id' })
+    expect(res.payload.id).toBe(state.id)
   })
 
   it('should get empty items when reading empty stream', async () => {
-    const res = await exchange({ type: 'xread', payload: { seq: '0-0' } })
+    const res = await exchange({ type: 'xread', payload: { id: '0-0' } })
     expect(Array.isArray(res.payload.items)).toBe(true)
     expect(res.payload.items).toHaveLength(0)
   })
 
   it('should read data added to stream', async () => {
-    state.seq = await redis.xadd(
+    state.id = await redis.xadd(
       'out:test-client:x',
       '*',
       'type',
@@ -204,26 +202,26 @@ describe('lula-hub', () => {
       'payload',
       '{}',
     )
-    const res = await exchange({ type: 'xread', payload: { seq: '0-0' } })
+    const res = await exchange({ type: 'xread', payload: { id: '0-0' } })
     expect(Array.isArray(res.payload.items)).toBe(true)
     expect(res.payload.items).toHaveLength(1)
     const item = res.payload.items[0]
     expect(item).toMatchObject({
       type: 'test-out',
       payload: '{}',
-      seq: state.seq,
+      id: state.id,
     })
   })
 
   it('should get empty items when reading past end of stream', async () => {
-    const res = await exchange({ type: 'xread', payload: { seq: state.seq } })
+    const res = await exchange({ type: 'xread', payload: { id: state.id } })
     expect(Array.isArray(res.payload.items)).toBe(true)
     expect(res.payload.items).toHaveLength(0)
   })
 
   it('should read latest data added to stream', async () => {
-    const seq = state.seq
-    state.seq = await redis.xadd(
+    const id = state.id
+    state.id = await redis.xadd(
       'out:test-client:x',
       '*',
       'type',
@@ -231,22 +229,22 @@ describe('lula-hub', () => {
       'payload',
       '{}',
     )
-    const res = await exchange({ type: 'xread', payload: { seq } })
+    const res = await exchange({ type: 'xread', payload: { id } })
     expect(Array.isArray(res.payload.items)).toBe(true)
     expect(res.payload.items).toHaveLength(1)
     const item = res.payload.items[0]
     expect(item).toMatchObject({
       type: 'test-out-2',
       payload: '{}',
-      seq: state.seq,
+      id: state.id,
     })
   })
 
   it('should block waiting for data', async () => {
     const now = Date.now()
-    const seq = state.seq
+    const id = state.id
     const blockMs = 100
-    const res = await exchange({ type: 'xread', payload: { seq, blockMs } })
+    const res = await exchange({ type: 'xread', payload: { id, blockMs } })
     const duration = Date.now() - now
     expect(duration).toBeGreaterThanOrEqual(100)
     expect(duration).toBeLessThan(500)

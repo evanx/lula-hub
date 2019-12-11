@@ -121,7 +121,7 @@ where `otpSecret` is a TOTP secret, and `regDeadline` is an epoch in millisecond
 
 The lula-auth microservice provides `/register` and `/login` endpoints.
 
-The lula-client will `/register` itself once-off, specifying a self-generated authentication `secret,` together with its provisioned `otpSecret.` If the `regDeadline` has expired, then this must be extended in Redis in order for the client's registration to succeed.
+The lula-client will `/register` itself once-off, specifying a self-generated authentication `secret,` and authenticating its registration using a one-time password using its provisioned `otpSecret.` If the `regDeadline` has expired, then this must be extended in Redis in order for the client's registration to succeed.
 
 Thereafter the client can `/login` using that `secret` in order to receive an `accessToken` for a WebSocket connection to lula-hub.
 
@@ -192,13 +192,13 @@ it was successfully processed.
 
 We poll for messages for the client from the hub's `out:${client}` stream as follows:
 
-- query the local Redis for the latest received ID for hub messages
-- if we have not yet received any messages from the hub, then use `0-0` for the ID
-- with that ID, read the next message from the hub using its `xread` endpoint with a long `blockMs` timeout
-- if no new message is available, then retry `xread`
-- ensure the last entry's `seq` field to its remote stream ID
+- query the local Redis for the latest `seq` for hub messages
+- if we have not yet received any messages from the hub, then use `0-0` for the `seq`
+- with that `seq` read the next message from the hub using its `xread` endpoint
+- if no new message is available, then retry `xread` with a long `blockMs` timeout
+- set the entry's `seq` field to its remote stream ID
 - add that message to the `in` stream of the local Redis
-- atomically store this latest `seq` for future resumption
+- atomically store this latest hub `seq` for future resumption
 - loop to `xread` the next hub message
 
 ## Design

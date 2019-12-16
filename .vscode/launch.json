@@ -27,7 +27,7 @@
       "type": "node",
       "request": "launch",
       "name": "mdel",
-      "program": "${workspaceFolder}/bin/mdel.js",
+      "program": "${workspaceFolder}/scripts/mdel.js",
       "env": {
         "NODE_ENV": "development",
         "MDEL_MATCH": "lula:*"

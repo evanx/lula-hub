@@ -29,7 +29,7 @@ const openUrl = async url =>
     setTimeout(reject, 2000)
   })
 
-const open = token => openUrl(`ws://127.0.0.1:3002?token=${token}`)
+const open = token => openUrl(`ws://127.0.0.1:3002?accessToken=${token}`)
 
 const send = (ws, message) =>
   new Promise((resolve, reject) => {
@@ -102,12 +102,12 @@ describe('lula-hub', () => {
   })
 
   it('should open when correct credentials', async () => {
-    const ws = await openUrl('ws://127.0.0.1:3002/?token=abc123')
+    const ws = await openUrl('ws://127.0.0.1:3002/?accessToken=abc123')
     const id = buildId()
     await expect(
       send(ws, { type: 'echo', id, payload: { say: 'hello' } }),
     ).resolves.toMatchObject({
-      type: '^echo',
+      type: 'echo',
       id,
       payload: { say: 'hi' },
     })
@@ -115,7 +115,7 @@ describe('lula-hub', () => {
   })
 
   it('should close when invalid credentials', async () => {
-    const ws = await openUrl('ws://127.0.0.1:3002/?token=a')
+    const ws = await openUrl('ws://127.0.0.1:3002/?accessToken=a')
     const id = buildId()
     await expect(
       send(ws, { type: 'echo', id, payload: { say: 'hello' } }),
@@ -123,7 +123,7 @@ describe('lula-hub', () => {
   })
 
   it('should close when empty credentials', async () => {
-    const ws = await openUrl('ws://127.0.0.1:3002/?token=')
+    const ws = await openUrl('ws://127.0.0.1:3002/?accessToken=')
     const id = buildId()
     await expect(
       send(ws, { type: 'echo', id, payload: { say: 'hello' } }),
@@ -141,7 +141,7 @@ describe('lula-hub', () => {
   it('should advise 0-0 id initially', async () => {
     const res = await exchange({ type: 'id' })
     expect(res).toMatchObject({
-      type: '^id',
+      type: 'id',
       payload: { id: '0-0' },
     })
   })
@@ -154,7 +154,7 @@ describe('lula-hub', () => {
       },
     })
     expect(res).toMatchObject({
-      type: '!xadd',
+      type: 'xadd',
       payload: {
         status: 400,
         message: 'Bad payload (id type)',
@@ -170,7 +170,7 @@ describe('lula-hub', () => {
       },
     })
     expect(res).toMatchObject({
-      type: '!xadd',
+      type: 'xadd',
       payload: {
         status: 400,
         message: 'Bad payload (id format)',
@@ -243,12 +243,15 @@ describe('lula-hub', () => {
   it('should block waiting for data', async () => {
     const now = Date.now()
     const id = state.id
-    const blockMs = 100
-    const res = await exchange({ type: 'xread', payload: { id, blockMs } })
+    const blockTimeout = 100
+    const res = await exchange({
+      type: 'xread',
+      payload: { id, blockTimeout },
+    })
+    expect(res.payload.items).toHaveLength(0)
     const duration = Date.now() - now
     expect(duration).toBeGreaterThanOrEqual(100)
     expect(duration).toBeLessThan(500)
-    expect(res.payload.items).toHaveLength(0)
     process.stdout.write('\n')
   })
 })

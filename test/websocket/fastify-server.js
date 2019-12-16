@@ -7,9 +7,8 @@ fastify.register(require('fastify-redis'), config.redis)
 fastify.register(require('fastify-websocket'), {
   handle: conn => {
     conn.socket.on('message', message => {
-      debugger
+      conn.pipe(conn) // creates an echo server
     })
-    //conn.pipe(conn) // creates an echo server
   },
   options: {
     maxPayload: 1048576,

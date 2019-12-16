@@ -6,7 +6,7 @@
   "scripts": {
     "test": "NODE_CONFIG_ENV=testing jest",
     "start": "node index.js",
-    "start:dev": "NODE_ENV=development node index.js"
+    "start:dev": "LOG_LEVEL=debug LOG_PRETTY=true NODE_ENV=development node index.js"
   },
   "repository": {
     "type": "git",

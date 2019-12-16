@@ -1,7 +1,7 @@
 const WebSocket = require('ws')
 
 const start = () => {
-  const ws = new WebSocket('ws://127.0.0.1:3002')
+  const ws = new WebSocket('ws://127.0.0.1:3002/accessToken=abc123')
 
   const app = {}
 
@@ -27,7 +27,7 @@ const start = () => {
     console.log('client received:', data)
     if (!app.testEnd) {
       app.testEnd = Date.now()
-      ws.send(JSON.stringify({ type: 'test-end', id: 'any', payload: {} }))
+      //ws.send(JSON.stringify({ type: 'test-end', id: 'any', payload: {} }))
     }
   })
 }

@@ -13,13 +13,6 @@ Lula-hub uses lula-auth for session token authentication - see https://github.co
 
 Lula-hub is used by lula-client to sync events - see https://github.com/evanx/lula-client (WIP)
 
-## Lula status: WIP
-
-Todo, in order of priority:
-
-- lula-client: implement the design presented here
-- lula-auth: consider JWT signing the session token
-
 ## Goals
 
 On a remote device, we wish to publish events by adding these to a local Redis stream, e.g.:
@@ -125,7 +118,7 @@ The lula-client will `/register` itself once-off, specifying a self-generated au
 
 Thereafter the client can `/login` using that `secret` in order to receive an `accessToken` for a WebSocket connection to lula-hub.
 
-Lula-auth will create a `session` hashes key in Redis named `session:${accessToken}:h` with a field `client.`
+Lula-auth will create a `session` "hashes" key in Redis named `session:${accessTokenSha}:h` with a field `client.` Note that the `accessToken` is hashed (using SHA1) in Redis.
 
 Lula-client will open a WebSocket connection to lula-hub e.g.:
 
@@ -136,7 +129,7 @@ const ws = new WebSocket(`wss://${config.hubHost}/accessToken=${accessToken}`)
 Lula-hub uses the `accessToken` from the WebSocket URL query parameters to authenticate the client as follows:
 
 ```javascript
-const client = await redis.hget(`session:${accessToken}:h`, 'client')
+const client = await redis.hget(`session:${sha1(accessToken)}:h`, 'client')
 ```
 
 If this Redis session key has expired, we'll get a `401` HTTP error code,

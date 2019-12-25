@@ -1,7 +1,7 @@
 const WebSocket = require('ws')
 
 const start = () => {
-  const ws = new WebSocket('ws://127.0.0.1:3002/accessToken=abc123')
+  const ws = new WebSocket('ws://127.0.0.1:3002/sessionToken=abc123')
 
   const app = {}
 

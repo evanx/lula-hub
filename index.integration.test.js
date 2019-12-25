@@ -29,7 +29,7 @@ const openUrl = async url =>
     setTimeout(reject, 2000)
   })
 
-const open = token => openUrl(`ws://127.0.0.1:3002?accessToken=${token}`)
+const open = token => openUrl(`ws://127.0.0.1:3002?sessionToken=${token}`)
 
 const send = (ws, message) =>
   new Promise((resolve, reject) => {
@@ -102,7 +102,7 @@ describe('lula-hub', () => {
   })
 
   it('should open when correct credentials', async () => {
-    const ws = await openUrl('ws://127.0.0.1:3002/?accessToken=abc123')
+    const ws = await openUrl('ws://127.0.0.1:3002/?sessionToken=abc123')
     const id = buildId()
     await expect(
       send(ws, { type: 'echo', id, payload: { say: 'hello' } }),
@@ -115,7 +115,7 @@ describe('lula-hub', () => {
   })
 
   it('should close when invalid credentials', async () => {
-    const ws = await openUrl('ws://127.0.0.1:3002/?accessToken=a')
+    const ws = await openUrl('ws://127.0.0.1:3002/?sessionToken=a')
     const id = buildId()
     await expect(
       send(ws, { type: 'echo', id, payload: { say: 'hello' } }),
@@ -123,7 +123,7 @@ describe('lula-hub', () => {
   })
 
   it('should close when empty credentials', async () => {
-    const ws = await openUrl('ws://127.0.0.1:3002/?accessToken=')
+    const ws = await openUrl('ws://127.0.0.1:3002/?sessionToken=')
     const id = buildId()
     await expect(
       send(ws, { type: 'echo', id, payload: { say: 'hello' } }),

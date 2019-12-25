@@ -4,14 +4,17 @@
 
 ## Overview
 
-Lula-hub is a simple message broker to leverage Redis. More specifically it is a Node.js WebSocket microservice to sync Redis streams. Its intended use-case is for reliable distributed messaging.
+Lula-hub is a simple message broker to leverage Redis. More specifically it is a Node.js WebSocket microservice to sync Redis streams.
+
+Its intended use-case is for reliable distributed messaging.
+Its limitation in IoT is that client devices must run Redis 5.
 
 It is intended to be scaleable e.g. via Kubernetes, where each instance connects to the same Redis backend
 e.g. a managed instance on your infrastructure provider.
 
 Lula-hub uses lula-auth for session token authentication - see https://github.com/evanx/lula-auth
 
-Lula-hub is used by lula-client to sync events - see https://github.com/evanx/lula-client (WIP)
+Lula-hub is used by lula-client to sync events - see https://github.com/evanx/lula-client
 
 ## Goals
 
@@ -116,20 +119,20 @@ The lula-auth microservice provides `/register` and `/login` endpoints.
 
 The lula-client will `/register` itself once-off, specifying a self-generated authentication `secret,` and authenticating its registration using a one-time password using its provisioned `otpSecret.` If the `regDeadline` has expired, then this must be extended in Redis in order for the client's registration to succeed.
 
-Thereafter the client can `/login` using that `secret` in order to receive an `accessToken` for a WebSocket connection to lula-hub.
+Thereafter the client can `/login` using that `secret` in order to receive an `sessionToken` for a WebSocket connection to lula-hub.
 
-Lula-auth will create a `session` "hashes" key in Redis named `session:${accessTokenSha}:h` with a field `client.` Note that the `accessToken` is hashed (using SHA1) in Redis.
+Lula-auth will create a `session` "hashes" key in Redis named `session:${sessionTokenSha}:h` with a field `client.` Note that the `sessionToken` is hashed (using SHA1) in Redis.
 
 Lula-client will open a WebSocket connection to lula-hub e.g.:
 
 ```javascript
-const ws = new WebSocket(`wss://${config.hubHost}/accessToken=${accessToken}`)
+const ws = new WebSocket(`wss://${config.hubHost}/sessionToken=${sessionToken}`)
 ```
 
-Lula-hub uses the `accessToken` from the WebSocket URL query parameters to authenticate the client as follows:
+Lula-hub uses the `sessionToken` from the WebSocket URL query parameters to authenticate the client as follows:
 
 ```javascript
-const client = await redis.hget(`session:${sha1(accessToken)}:h`, 'client')
+const client = await redis.hget(`session:${sha1(sessionToken)}:h`, 'client')
 ```
 
 If this Redis session key has expired, we'll get a `401` HTTP error code,
@@ -165,7 +168,7 @@ The client posts its chosen `secret` and a time-based OTP using its provisioned 
 A registered client can then `/login` via lula-auth and sync to lula-hub:
 
 - login using the `/login` endpoint from lula-auth
-- use the session token from `/login` as the `accessToken` in the WebSocket URL for lula-hub
+- use the session token from `/login` as the `sessionToken` in the WebSocket URL for lula-hub
 - query the hub's `id` endpoint for the latest stream ID received from our client
 - read the next entry in the `out` stream using `XREAD` with that ID
 - set the entry's `id` field to its client stream ID

@@ -1,10 +1,12 @@
 const config = require('config')
+const lodash = require('lodash')
 const WebSocket = require('ws')
 
 const {
   buildId,
   buildMonitor,
   buildRedis,
+  buildSha1,
   endRedis,
   multiAsync,
 } = require('./lib/utils')
@@ -29,7 +31,8 @@ const openUrl = async url =>
     setTimeout(reject, 2000)
   })
 
-const open = token => openUrl(`ws://127.0.0.1:3002?sessionToken=${token}`)
+const open = sessionToken =>
+  openUrl(`ws://127.0.0.1:3002?sessionToken=${sessionToken}`)
 
 const send = (ws, message) =>
   new Promise((resolve, reject) => {
@@ -63,15 +66,14 @@ describe('lula-hub', () => {
   }
 
   const xadd = async data => {
+    const fields = lodash.flatten(Object.entries(data).map(entry => [...entry]))
     state.id = state.startTimeMs + '-0'
     const res = await exchange({
       type: 'xadd',
-      payload: Object.assign(
-        {
-          id: state.id,
-        },
-        data,
-      ),
+      payload: {
+        id: state.id,
+        fields,
+      },
     })
     expect(parseInt(res.payload.id)).toBeGreaterThan(state.startTimeMs)
     monitor.debug('xadd', { id: state.id })
@@ -79,7 +81,7 @@ describe('lula-hub', () => {
   }
 
   beforeAll(async () => {
-    const sessionKey = `session:${state.sessionToken}:h`
+    const sessionKey = `session:${buildSha1(state.sessionToken)}:h`
     const [time] = await multiAsync(redis, [
       ['time'],
       ['del', 'in:x'],
@@ -151,6 +153,7 @@ describe('lula-hub', () => {
       type: 'xadd',
       payload: {
         id: state.startTimeMs,
+        fields: ['key', 'value'],
       },
     })
     expect(res).toMatchObject({
@@ -167,6 +170,7 @@ describe('lula-hub', () => {
       type: 'xadd',
       payload: {
         id: toString(state.startTimeMs),
+        fields: ['key', 'value'],
       },
     })
     expect(res).toMatchObject({

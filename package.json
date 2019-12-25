@@ -1,6 +1,6 @@
 {
   "name": "lula-hub",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Fastify microservice to sync streams for Redis-based distributed messaging",
   "main": "index.js",
   "scripts": {

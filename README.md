@@ -4,17 +4,17 @@
 
 ## Overview
 
-Lula-hub is a simple message broker to leverage Redis. More specifically it is a Node.js WebSocket microservice to sync Redis streams.
+Lula-hub is a simple message broker that leverages Redis. More specifically it is a Node.js WebSocket microservice to sync Redis streams.
 
 Its intended use-case is for reliable distributed messaging.
 Its limitation in IoT is that client devices must run Redis 5.
 
 It is intended to be scaleable e.g. via Kubernetes, where each instance connects to the same Redis backend
-e.g. a managed instance on your infrastructure provider.
+e.g. a managed instance in the cloud. (We use `ioredis` which supports TLS.)
 
 Lula-hub uses lula-auth for session token authentication - see https://github.com/evanx/lula-auth
 
-Lula-hub is used by lula-client to sync events - see https://github.com/evanx/lula-client
+Lula-hub is used by lula-client to sync messages - see https://github.com/evanx/lula-client
 
 ## Goals
 
@@ -27,7 +27,7 @@ redis-cli XADD lula-client:out:x MAXLEN 10000 * topic 'test' payload '{ "type": 
 Then on our central cloud infrastructure we can consume these events by reading a sync'ed stream e.g.:
 
 ```shell
-redis-cli XREAD STREAMS lula-hub:in:x "${id}"
+redis-cli XREAD STREAMS lula-hub:in:x $lastId
 ```
 
 Similarly for messages to be sent from the hub to remote clients:
@@ -140,7 +140,7 @@ to advise the lula-client to `/login` again.
 
 ### lula-client
 
-This is a daemon process that we run on a client to sync the outgoing stream to the hub, and pull any messages.
+Lula-client is a process that we run on a client to sync the outgoing stream to the hub, and pull any messages.
 
 #### Client publish to hub
 
@@ -175,14 +175,13 @@ A registered client can then `/login` via lula-auth and sync to lula-hub:
 - post the entry to the hub using the `xadd` endpoint
 - in the event of a 200 (ok), loop to `XREAD` the next entry
 - in the event of a 401 (unauthorized), `/login` again using lula-auth, then retry
-- in the event of a 429 (too many requests), then retry after a delay
-- in the event of a 409 (conflict) for a retry, ignore and loop to `XREAD` the next entry
-- in the event of a another error, retry the HTTP request to lula-hub
+- in the event of a 409 (conflict) e.g. for a retry, ignore and loop to `XREAD` the next entry
+- in the event of a 429 (too many requests), then retry after an exponential backoff delay
+- in the event of a another error, then retry after a delay
 
-Note that a 409 indicates the posted `id` is equal or less than the last `id` on record,
-and so is treated as a duplicate. We expect this in the event of a retry of a
-posting where the response was not received, and so we did not know that
-it was successfully processed.
+Note that a 409 indicates that the `id` is equal or less than the last `id` on record,
+and so the request is treated as a duplicate e.g. resulting from a retry of a request that was
+successfully `xadd`'ed by the hub, but the hub's response was not received by the client timeously.
 
 ### Client polling
 

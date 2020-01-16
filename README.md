@@ -4,10 +4,13 @@
 
 ## Overview
 
-Lula-hub is a simple message broker that leverages Redis. More specifically it is a Node.js WebSocket microservice to sync Redis streams.
+Lula-hub is a simple message broker that leverages Redis. 
+
+More specifically it is a Node.js WebSocket microservice to sync Redis streams to service a message hub.
 
 Its intended use-case is for reliable distributed messaging.
-Its limitation in IoT is that client devices must run Redis 5.
+
+Its limitation for IoT is that client devices must run Redis 5.
 
 It is intended to be scaleable e.g. via Kubernetes, where each instance connects to the same Redis backend
 e.g. a managed instance in the cloud. (We use `ioredis` which supports TLS.)
@@ -27,7 +30,7 @@ redis-cli XADD lula-client:out:x MAXLEN 10000 * topic 'test' payload '{ "type": 
 Then on our central cloud infrastructure we can consume these events by reading a sync'ed stream e.g.:
 
 ```shell
-redis-cli XREAD STREAMS lula-hub:in:x $lastId
+redis-cli XREAD STREAMS lula-hub:in:x "${lastId}"
 ```
 
 Similarly for messages to be sent from the hub to remote clients:
@@ -177,6 +180,7 @@ A registered client can then `/login` via lula-auth and sync to lula-hub:
 - in the event of a 401 (unauthorized), `/login` again using lula-auth, then retry
 - in the event of a 409 (conflict) e.g. for a retry, ignore and loop to `XREAD` the next entry
 - in the event of a 429 (too many requests), then retry after an exponential backoff delay
+- in the event of a 503 (service unavailable), then retry after an exponential backoff delay
 - in the event of a another error, then retry after a delay
 
 Note that a 409 indicates that the `id` is equal or less than the last `id` on record,
